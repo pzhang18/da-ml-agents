@@ -10,7 +10,7 @@ import math
 # Loads csv files recorded on real robot
 # Overwrite corresponding keys in the h5py file
 
-buffer_file = "C:/Users/pengf/rl/results/000/AgentTCP/test.hdf5"
+buffer_file = "C:/Users/pengf/rl/da-ml-agents/results/sac00/AgentTCP/last_replay_buffer.hdf5"
 demo_path = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/0905_robot_data_00.csv"
 
 def load_demo(path):
@@ -51,7 +51,7 @@ def load_demo(path):
                     tcp_forces, tcp_torques, tcp_speeds))
     next_obs = np.vstack((obs[1:], obs[-1]))
     continuous_action = tcp_speeds
-    continuous_log_probs = np.empty((data_length,0))
+    continuous_log_probs = np.empty((data_length,6))
     next_continuous_action = np.vstack((tcp_speeds[1:], tcp_speeds[-1]))
     done = np.zeros(data_length)
     done[-1] = 1
@@ -70,7 +70,7 @@ def load_demo(path):
 def get_reward(p, r, target_p, target_r):
     distance = np.sqrt(np.sum((p-target_p)**2, axis=1))
     angleDelta = np.sum(abs(r-target_r), axis=1)
-    reward = 1.0 - (distance + angleDelta*0.001)
+    reward = 1.0 - (distance + angleDelta*0.00001)
     mask = reward > (1.0 - 0.01)
     reward[mask] += 9.0
     return reward
@@ -88,7 +88,6 @@ def to_rotation(vector):
 def run():
     with h5py.File(buffer_file, 'r') as file:
         buffer_dict = {}  # Create a dictionary to store the data
-        
         # Iterate through the keys in the HDF5 file
         for key in file.keys():
             # Load the dataset associated with the key
@@ -100,15 +99,31 @@ def run():
     # Export the DataFrame to a single CSV file
     # df.to_csv('output.csv', index=False)
     demo_data = load_demo(demo_path)
+    demo_length = demo_data["done"].shape[0]
 
     # Open the HDF5 file in read-write mode ('a')
     with h5py.File(buffer_file, 'a') as file:
-        # Navigate to the specific dataset or group you want to modify
-        dataset = file['dataset_name']  # Replace 'dataset_name' with the actual dataset name
-        
-        # Modify the values in the dataset
-        new_values = ...  # Replace with the new values you want to assign
-        dataset[:] = new_values
+        # replace replay buffer values by the demo data
+        file["obs:0"][:demo_length] = demo_data["obs:0"]
+        file["next_obs:0"][:demo_length] = demo_data["next_obs:0"]
+        file["continuous_action"][:demo_length] = demo_data["continuous_action"]
+        file["continuous_log_probs"][:demo_length] = demo_data["continuous_log_probs"]
+        file["next_continuous_action"][:demo_length] = demo_data["next_continuous_action"]
+        file["done"][:demo_length] = demo_data["done"]
+        file["environment_rewards"][:demo_length] = demo_data["environment_rewards"]
+
+    with h5py.File(buffer_file, 'r') as file:
+        new_buffer_dict = {}  # Create a dictionary to store the data
+        # Iterate through the keys in the HDF5 file
+        for key in file.keys():
+            # Load the dataset associated with the key
+            data_value = file[key][:]
+            print(key, data_value[:5])
+            # Add the dataset to the dictionary with the key as the name
+            new_buffer_dict[key] = data_value.tolist()
+
+    new_buff_df = pd.DataFrame(new_buffer_dict)
+    print(new_buff_df)
 
 def main():
     run()
