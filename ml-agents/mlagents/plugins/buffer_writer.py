@@ -9,6 +9,9 @@ import os
 # Loads csv files recorded on real robot
 # Overwrite corresponding keys in the h5py file
 
+# BEFORE START: save_replay_buffer in config file must be true
+
+# Replace these values with actual path:
 buffer_file = "C:/Users/pengf/rl/da-ml-agents/results/sac00/AgentTCP/last_replay_buffer.hdf5"
 demo_path = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/0905_robot_data_00.csv"
 demo_folder = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/"
