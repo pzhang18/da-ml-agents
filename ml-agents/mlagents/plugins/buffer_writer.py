@@ -12,6 +12,7 @@ import os
 buffer_file = "C:/Users/pengf/rl/da-ml-agents/results/sac00/AgentTCP/last_replay_buffer.hdf5"
 demo_path = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/0905_robot_data_00.csv"
 demo_folder = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/"
+DEMO_NUM = 5 # Number of demo files to be added
 
 def load_demo(path):
     data_dict = {}
@@ -96,46 +97,43 @@ def run():
             print(key, data_value[:5])
             buffer_dict[key] = data_value
 
-    # Export the DataFrame to a single CSV file
-    # df.to_csv('output.csv', index=False)
-
-    # load demo data from csv files
-    dfs_list = []
-    for filename in os.listdir(demo_folder):
-        if filename.endswith(".csv"):
-            demo_file_path = os.path.join(demo_folder, filename)
-            demo_data_loaded = load_demo(demo_file_path)
-            df_loaded = pd.DataFrame.from_dict(demo_data_loaded)
-            dfs_list.append(df_loaded)
-    demo_df_combined = pd.concat(dfs_list, axis=0)
-    demo_data = demo_df_combined.to_dict()
-
-    # demo_data = load_demo(demo_path)
-    demo_length = demo_data["done"].shape[0]
-
     # Open the HDF5 file in read-write mode ('a')
     with h5py.File(buffer_file, 'a') as file:
-        # replace replay buffer values by the demo data
-        file["obs:0"][:demo_length] = demo_data["obs:0"]
-        file["next_obs:0"][:demo_length] = demo_data["next_obs:0"]
-        file["continuous_action"][:demo_length] = demo_data["continuous_action"]
-        file["continuous_log_probs"][:demo_length] = demo_data["continuous_log_probs"]
-        file["next_continuous_action"][:demo_length] = demo_data["next_continuous_action"]
-        file["done"][:demo_length] = demo_data["done"]
-        file["environment_rewards"][:demo_length] = demo_data["environment_rewards"]
+        print(f"Openning replay buffer file at {buffer_file}")
+        # load demo data from csv files
+        demo_counter = 0
+        total_demo_length = 0
+        for filename in os.listdir(demo_folder):
+            if filename.endswith(".csv") and (demo_counter < DEMO_NUM):
+                demo_file_path = os.path.join(demo_folder, filename)
+                print(f"Openning demo file {filename}")
+                demo_data = load_demo(demo_file_path)
+                demo_length = demo_data["done"].shape[0]
+                # replace replay buffer values by the demo data
+                file["obs:0"][total_demo_length:demo_length] = demo_data["obs:0"]
+                file["next_obs:0"][total_demo_length:demo_length] = demo_data["next_obs:0"]
+                file["continuous_action"][total_demo_length:demo_length] = demo_data["continuous_action"]
+                file["continuous_log_probs"][total_demo_length:demo_length] = demo_data["continuous_log_probs"]
+                file["next_continuous_action"][total_demo_length:demo_length] = demo_data["next_continuous_action"]
+                file["done"][total_demo_length:demo_length] = demo_data["done"]
+                file["environment_rewards"][total_demo_length:demo_length] = demo_data["environment_rewards"]
+                total_demo_length += demo_length
+                demo_counter += 1
+                print(f"Added {demo_length} steps of demo data. Total added data: {total_demo_length}")
 
+    # for debuggin and verifying
     with h5py.File(buffer_file, 'r') as file:
-        new_buffer_dict = {}  # Create a dictionary to store the data
+        new_buffer_dict = {}
         # Iterate through the keys in the HDF5 file
         for key in file.keys():
             # Load the dataset associated with the key
             data_value = file[key][:]
-            print(key, data_value[:5])
+            print(key, data_value[:3])
             # Add the dataset to the dictionary with the key as the name
             new_buffer_dict[key] = data_value.tolist()
-
-    new_buff_df = pd.DataFrame(new_buffer_dict)
-    print(new_buff_df)
+    new_buff_df = pd.DataFrame(new_buffer_dict)    
+    # Export the DataFrame to a single CSV file for debugging
+    new_buff_df.to_csv('new_buffer.csv', index=False)
 
 def main():
     run()
