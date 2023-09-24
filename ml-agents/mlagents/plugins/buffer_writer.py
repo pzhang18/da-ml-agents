@@ -2,8 +2,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import math
-
-# from mlagents.trainers.torch_entities.distributions import GaussianDistInstance
+import os
 
 # Adding human demo data to the replay buffer. 
 # Opens the h5py file saved by training process. 
@@ -12,6 +11,7 @@ import math
 
 buffer_file = "C:/Users/pengf/rl/da-ml-agents/results/sac00/AgentTCP/last_replay_buffer.hdf5"
 demo_path = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/0905_robot_data_00.csv"
+demo_folder = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/"
 
 def load_demo(path):
     data_dict = {}
@@ -70,7 +70,7 @@ def load_demo(path):
 def get_reward(p, r, target_p, target_r):
     distance = np.sqrt(np.sum((p-target_p)**2, axis=1))
     angleDelta = np.sum(abs(r-target_r), axis=1)
-    reward = 1.0 - (distance + angleDelta*0.00001)
+    reward = 1.0 - (distance + angleDelta*0.1/180)
     mask = reward > (1.0 - 0.01)
     reward[mask] += 9.0
     return reward
@@ -86,19 +86,31 @@ def to_rotation(vector):
     return rotation
 
 def run():
+    # inspect replay buffer for debugging
     with h5py.File(buffer_file, 'r') as file:
-        buffer_dict = {}  # Create a dictionary to store the data
+        buffer_dict = {}
         # Iterate through the keys in the HDF5 file
         for key in file.keys():
-            # Load the dataset associated with the key
+            # Load the replay buffer data associated with the key
             data_value = file[key][:]
             print(key, data_value[:5])
-            # Add the dataset to the dictionary with the key as the name
             buffer_dict[key] = data_value
 
     # Export the DataFrame to a single CSV file
     # df.to_csv('output.csv', index=False)
-    demo_data = load_demo(demo_path)
+
+    # load demo data from csv files
+    dfs_list = []
+    for filename in os.listdir(demo_folder):
+        if filename.endswith(".csv"):
+            demo_file_path = os.path.join(demo_folder, filename)
+            demo_data_loaded = load_demo(demo_file_path)
+            df_loaded = pd.DataFrame.from_dict(demo_data_loaded)
+            dfs_list.append(df_loaded)
+    demo_df_combined = pd.concat(dfs_list, axis=0)
+    demo_data = demo_df_combined.to_dict()
+
+    # demo_data = load_demo(demo_path)
     demo_length = demo_data["done"].shape[0]
 
     # Open the HDF5 file in read-write mode ('a')
@@ -130,19 +142,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-    
-
-# to modify values
-# Open the HDF5 file in read-write mode ('a')
-# with h5py.File('your_file.h5', 'a') as file:
-#     # Navigate to the specific dataset or group you want to modify
-#     dataset = file['dataset_name']  # Replace 'dataset_name' with the actual dataset name
-    
-#     # Modify the values in the dataset
-#     new_values = ...  # Replace with the new values you want to assign
-#     dataset[:] = new_values
-    
-# The changes will be saved to the HDF5 file when the file is closed
