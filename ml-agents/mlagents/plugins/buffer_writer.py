@@ -12,10 +12,10 @@ import os
 # BEFORE START: save_replay_buffer in config file must be true
 
 # Replace these values with actual path:
-buffer_file = "C:/Users/pengf/rl/da-ml-agents/results/sac00/AgentTCP/last_replay_buffer.hdf5"
+buffer_file = "C:/Users/pengf/rl/da-ml-agents/results/sac02/AgentTCP/last_replay_buffer.hdf5"
 demo_path = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/0905_robot_data_00.csv"
 demo_folder = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/"
-DEMO_NUM = 5 # Number of demo files to be added
+DEMO_NUM = 10 # Number of demo files to be added
 
 def load_demo(path):
     data_dict = {}
@@ -74,7 +74,7 @@ def load_demo(path):
 def get_reward(p, r, target_p, target_r):
     distance = np.sqrt(np.sum((p-target_p)**2, axis=1))
     angleDelta = np.sum(abs(r-target_r), axis=1)
-    reward = 1.0 - (distance + angleDelta*0.1/180)
+    reward = 1.0 / (distance + angleDelta*0.05/180+0.000001)
     mask = reward > (1.0 - 0.01)
     reward[mask] += 9.0
     return reward
