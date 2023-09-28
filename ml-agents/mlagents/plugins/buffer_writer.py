@@ -12,10 +12,11 @@ import os
 # BEFORE START: save_replay_buffer in config file must be true
 
 # Replace these values with actual path:
-buffer_file = "C:/Users/pengf/rl/da-ml-agents/results/sac02/AgentTCP/last_replay_buffer.hdf5"
+buffer_file = "C:/Users/pengf/rl/da-ml-agents/results/sac06/AgentTCP/last_replay_buffer.hdf5"
 demo_path = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/0905_robot_data_00.csv"
 demo_folder = "C:/Users/pengf/rl/da-ml-agents/demo_data/human_demo/"
 DEMO_NUM = 10 # Number of demo files to be added
+DATA_FREQUENCY = 100 # (hz)
 
 def load_demo(path):
     data_dict = {}
@@ -35,7 +36,7 @@ def load_demo(path):
                        -final_state['actual_TCP_pose_0']-final_state['actual_TCP_pose_1']
                        -final_state['actual_TCP_pose_2'])>0.0015)]
     # match data frequency with unity time step
-    data_f = 100 # data recorded at 100hz frequency
+    data_f = DATA_FREQUENCY # data recorded at 100hz frequency
     unity_f = 50 # unity default 50hz frequency (0.02s time step)
     df = df_filtered.iloc[::int(data_f / unity_f)]
     # get values of each category 
